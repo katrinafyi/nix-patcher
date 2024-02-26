@@ -5,11 +5,11 @@ It semi-automatically maintains a forked nixpkgs with any number of patches appl
 Configuration of the upstream repository, fork repository, and patch files are all done
 within flake.nix.
 
-For example, given these inputs,
+For example, given these inputs (fixed for reproducibility),
 ```nix
-inputs.nixpkgs-upstream.url = "github:nixos/nixpkgs/nixos-unstable";
+inputs.nixpkgs-upstream.url = "github:nixos/nixpkgs/f9d39fb9aff0efee4a3d5f4a6d7c17701d38a1d8";
 
-inputs.nixpkgs.url = "github:katrinafyi/nixpkgs/patch-branch";
+inputs.nixpkgs.url = "github:katrinafyi/nixpkgs/patch-branch";  # XXX change me!
 
 inputs.nixpkgs-patch-10.url = "https://github.com/NixOS/nixpkgs/compare/ffacc011dffba16ca360028d1f81cae99ff1280f..9a9cf8661391f21f7a44dc4823f815524351c94f.patch";
 inputs.nixpkgs-patch-10.flake = false;
@@ -31,12 +31,15 @@ perform the patch without a checkout of nixpkgs.
 ### first time
 
 To set this up, you'll need to add the upstream and patch inputs to your flake.nix.
-After this, run `nix flake lock` to generate their lock entries.
-(The patched fork and its branch must exist! Create them manually if not.)
+After this, run `nix flake lock` to generate their lock entries
+(The patched fork and its branch must exist! Create them manually if not.).
+Don't forget to add `...` to your output function's argument list.
 
 For nix-patcher itself, you will need a Github token.
 A [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)
 is suggested, and it will need at least write permissions on the fork repository.
+If you plan to use this within Github Actions, you can make use of the
+[automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication).
 
 Then, simply run nix-patcher from within the flake directory
 ```bash
