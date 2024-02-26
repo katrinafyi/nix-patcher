@@ -38,14 +38,14 @@ For nix-patcher itself, you will need a Github token.
 A [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)
 is suggested, and it will need at least write permissions on the fork repository.
 
-Then, simply nix-patcher for the first time from within the flake directory
+Then, simply run nix-patcher from within the flake directory
 ```bash
 GITHUB_TOKEN=... nix run github:katrinafyi/nix-patcher -- --commit
 ```
 If all goes well, it will update and commit the relevant inputs.
 Links to the newly-patched branch and the last commit are also printed.
 
-Patching nixpkgs will take around 
+Patching nixpkgs takes around 40 seconds.
 
 ### updating inputs
 
