@@ -2,10 +2,11 @@
 , stdenv
 , makeWrapper
 , python3
+, nix
 , patch2pr
 }:
 
-let path = lib.makeBinPath [ patch2pr ];
+let path = lib.makeBinPath [ nix patch2pr ];
 in stdenv.mkDerivation {
   pname = "nix-patcher";
   version = "0.1.0";

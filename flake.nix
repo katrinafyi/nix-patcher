@@ -17,7 +17,19 @@
         {
           # nixpkgs pr for patch2pr: https://github.com/NixOS/nixpkgs/pull/291104
           patch2pr = pkgs.callPackage ./patch2pr.nix { inherit (selfpkgs) patch2pr; };
-          nix-patcher = pkgs.callPackage ./patcher.nix { inherit (selfpkgs) patch2pr; };
-        });
+          nix-patcher = pkgs.callPackage ./patcher.nix {
+            inherit (selfpkgs) patch2pr;
+            nix = pkgs.nixVersions.nix_2_19;
+          };
+        }
+      );
+
+      apps = lib.genAttrs systems (sys: 
+        let selfpkgs = self.packages.${sys};
+        in {
+          default.type = "app";
+          default.program = lib.getExe selfpkgs.nix-patcher;
+        }
+      );
     };
 }
