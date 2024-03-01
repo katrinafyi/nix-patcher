@@ -1,7 +1,7 @@
 {
   description = "nix-patcher is a tool for patching Nix flake inputs, semi-automatically.";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
   outputs = { self, nixpkgs }: 
     let
@@ -12,14 +12,10 @@
       packages = lib.genAttrs systems (sys: 
         let 
           pkgs = nixpkgs.legacyPackages.${sys};
-          selfpkgs = self.packages.${sys};
         in
         {
-          # nixpkgs pr for patch2pr: https://github.com/NixOS/nixpkgs/pull/291104
-          patch2pr = pkgs.callPackage ./patch2pr.nix { inherit (selfpkgs) patch2pr; };
           nix-patcher = pkgs.callPackage ./patcher.nix {
-            inherit (selfpkgs) patch2pr;
-            nix = pkgs.nixVersions.nix_2_19;
+            nix = pkgs.nixVersions.nix_2_19; # flake update arguments changed...
           };
         }
       );
