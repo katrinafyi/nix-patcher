@@ -1,3 +1,8 @@
+> ⚠️ This tool has not been tested through consistent use, not even by myself.
+> If you're interested in it, though, please give it a try and let me know if it fails.
+> I will work to fix any issues.
+
+
 # nix-patcher
 
 _nix-patcher_ is a tool for patching Nix flake inputs.
