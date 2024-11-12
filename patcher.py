@@ -15,13 +15,14 @@ from pathlib import Path
 def log(*args, **kwargs):
   print(*args, **kwargs, file=sys.stderr, flush=True)
 
-patch2pr = shutil.which('patch2pr')
-if not patch2pr:
+patch2pr_path = shutil.which('patch2pr')
+if not patch2pr_path:
   gopath = subprocess.check_output(['go', 'env', 'GOPATH'], text=True).strip()
-  patch2pr = gopath + '/bin/patch2pr'
-patch2pr = Path(patch2pr)
+  patch2pr_path = gopath + '/bin/patch2pr'
+patch2pr = Path(patch2pr_path)
 assert patch2pr.exists(), "patch2pr not found!"
 
+EXPECTED_NIX_FLAKE_LOCK_VERSION = 7
 
 @dataclasses.dataclass
 class Repo:
@@ -33,6 +34,26 @@ class Repo:
   branch: str = '' # branch to use for patch
   patches: list[tuple[int, str, str]] = dataclasses.field(default_factory=list)
   final: str = ''
+
+# apply the given patch to the given fork repo and
+# return the new commit hash
+def apply_patch(fork: str, base: str, branch: str, patch: str, dry: bool):
+  if dry:
+    log('... dry run, skipping patch apply')
+    split = base.split('_') + ['0']
+    commit, n = split[:2]
+    return commit + '_' + str(int(n)+1)
+  out = subprocess.check_output([
+    patch2pr,
+    '-repository', fork,
+    '-patch-base', base,
+    '-head-branch', branch,
+    '-no-pull-request',
+    '-force',
+    '-json', patch
+  ])
+  out = json.loads(out)
+  return out['commit']
 
 
 def main(argv):
@@ -49,12 +70,12 @@ def main(argv):
                     help='if set, will call `nix flake update _` on the newly patched inputs')
   argp.add_argument('--commit', action='store_true',
                     help='like --update but also adds --commit-lock-file')
-  argp.add_argument('--print', action='store_true',
-                    help='print detected patches without applying')
-  argp.add_argument('--tmp', default=tempfile.gettempdir())
+  argp.add_argument('--dry-run', action='store_true',
+                    help='log steps but do not perform any changes')
+  argp.add_argument('--verbose', action='store_true',
+                    help='print additional state information')
 
   args = argp.parse_args(argv[1:])
-  args.tmp = Path(tempfile.mkdtemp(dir=args.tmp))
   args.update |= args.commit
 
   if args.upstream_suffix == args.patched_suffix:
@@ -68,12 +89,22 @@ def main(argv):
   flakemeta = json.loads(flakemeta)
   locks = flakemeta['locks']
 
+  lockver = locks.get('version')
+  if lockver != EXPECTED_NIX_FLAKE_LOCK_VERSION:
+    log(f'WARNING: unsupported/untested flake.lock metadata version'
+        f' (found {lockver}, but {EXPECTED_NIX_FLAKE_LOCK_VERSION} expected)')
+
   flakepath = flakemeta["resolvedUrl"]
   log(f'{flakemeta["resolvedUrl"]=}')
 
   repos = collections.defaultdict(Repo)
 
-  for k, v in locks['nodes'].items():
+  # restrict using locks.root.inputs to only
+  # handle inputs occuring in /this/ flake, and
+  # not transitive inputs
+  rootkey = locks['root']
+  for k in locks['nodes'][rootkey]['inputs'].keys():
+    v = locks['nodes'][k]
     original = v.get('original')
     locked = v.get('locked')
     # log(locked)
@@ -111,6 +142,9 @@ def main(argv):
 
     elif is_patched:
       name = k[:len(k)-len(args.patched_suffix)]
+      if not original.get('ref'):
+        log(name, ': ignoring input despite patched-suffix match, due to no branch specified')
+        continue
       repos[name].fork = f"{original['owner']}/{original['repo']}"
       repos[name].branch = original['ref']
 
@@ -120,35 +154,24 @@ def main(argv):
       repos[name].upstream = f"{locked['owner']}/{locked['repo']}"
       repos[name].revision = locked['rev']
 
- 
-  if args.print:
+  if args.verbose:
     asdict = {k: dataclasses.asdict(v) for k,v in repos.items()}
-    json.dump(asdict, sys.stdout, indent=2)
-    return
+    json.dump(asdict, sys.stderr, indent=2)
+    print(file=sys.stderr)
 
   log(f'{patch2pr=}')
   for repo in repos.values():
     if not (repo.basename and repo.fork):
-      log(repo.basename, ': skipping input', repo)
+      log(repo.basename, ': skipping input (missing upstream or fork):', repo)
       continue
 
-    log(repo.basename, ': fork is', f'{repo.fork=}', f'{repo.branch=}')
+    log(repo.basename, ': patching. fork is', f'{repo.fork=}', f'{repo.branch=}')
     repo.patches.sort(key=lambda x: x[0])
     rev = repo.revision
     for i, url, p in repo.patches:
       log(repo.basename, f': applying patch {i}: {p!s}')
-      out = subprocess.check_output([
-        patch2pr,
-        '-repository', repo.fork,
-        '-patch-base', rev,
-        '-head-branch', repo.branch,
-        '-no-pull-request',
-        '-force',
-        '-json', p
-      ])
-      out = json.loads(out)
-      rev = out['commit']
-      log(repo.basename, ': ->', out)
+      rev = apply_patch(repo.fork, rev, repo.branch, p, args.dry_run)
+      log(repo.basename, ': ->', rev)
 
     repo.final = rev
     log(repo.basename, ': final commit:', rev)
@@ -165,7 +188,8 @@ def main(argv):
         update_cmd = ['--commit-lock-file'] + update_cmd
 
       log(f'{update_cmd=}')
-      subprocess.check_call(['nix', 'flake', 'update', '--flake', flakepath] + update_cmd)
+      if not args.dry_run:
+        subprocess.check_call(['nix', 'flake', 'update', '--flake', flakepath] + update_cmd)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
