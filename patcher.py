@@ -22,6 +22,7 @@ if not patch2pr_path:
 patch2pr = Path(patch2pr_path)
 assert patch2pr.exists(), "patch2pr not found!"
 
+EXPECTED_NIX_FLAKE_LOCK_VERSION = 7
 
 @dataclasses.dataclass
 class Repo:
@@ -87,6 +88,11 @@ def main(argv):
     text=True).strip()
   flakemeta = json.loads(flakemeta)
   locks = flakemeta['locks']
+
+  lockver = locks.get('version')
+  if lockver != EXPECTED_NIX_FLAKE_LOCK_VERSION:
+    log(f'WARNING: unsupported/untested flake.lock metadata version'
+        f' (found {lockver}, but {EXPECTED_NIX_FLAKE_LOCK_VERSION} expected)')
 
   flakepath = flakemeta["resolvedUrl"]
   log(f'{flakemeta["resolvedUrl"]=}')
