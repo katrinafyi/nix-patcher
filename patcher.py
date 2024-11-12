@@ -93,7 +93,12 @@ def main(argv):
 
   repos = collections.defaultdict(Repo)
 
-  for k, v in locks['nodes'].items():
+  # restrict using locks.root.inputs to only
+  # handle inputs occuring in /this/ flake, and
+  # not transitive inputs
+  rootkey = locks['root']
+  for k in locks['nodes'][rootkey]['inputs'].keys():
+    v = locks['nodes'][k]
     original = v.get('original')
     locked = v.get('locked')
     # log(locked)
