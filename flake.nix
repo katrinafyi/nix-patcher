@@ -15,7 +15,7 @@
         in
         {
           nix-patcher = pkgs.callPackage ./patcher.nix {
-            nix = pkgs.nixVersions.nix_2_19; # flake update arguments changed...
+            nix = pkgs.nixVersions.nix_2_18; # "nix flake update" arguments changed...
           };
         }
       );
