@@ -99,6 +99,20 @@ options:
   --tmp TMP
 ```
 
+## related work
+
+gepbird has made [a comparison of 3 flake-patching tools](https://github.com/gepbird/nixpkgs-patcher?tab=readme-ov-file#comparison-with-alternatives), including this one!
+Their assessment of nix-patcher is accurate, and I am grateful for their comparison.
+
+Avoiding import-from-derivation was personal requirement for me
+(for cross-compiling), and this led me towards the design of nix-patcher.
+If you have different requirements, it is worthwhile to check the comparison for other tools.
+I've also listed a few here:
+
+- [gepbird/nixpkgs-patcher](https://github.com/gepbird/nixpkgs-patcher)
+- [jfly/flake-input-patcher](https://github.com/jfly/flake-input-patcher)
+- [mightiam/input-branches](https://github.com/mightyiam/input-branches) (not in gepbird comparison)
+
 ## closing
 
 We made use of the quite clever [patch2pr] tool to perform
