@@ -14,7 +14,7 @@ inputs.nixpkgs.url = "github:katrinafyi/nixpkgs/patch-branch";  # XXX change me!
 
 inputs.nixpkgs-patch-10.url = "https://github.com/NixOS/nixpkgs/compare/ffacc011dffba16ca360028d1f81cae99ff1280f..9a9cf8661391f21f7a44dc4823f815524351c94f.patch";
 inputs.nixpkgs-patch-10.flake = false;
-inputs.nixpkgs-patch-20.url = "https://github.com/NixOS/nixpkgs/commit/c22a75b70ffe390f4ef3cc3a63eae5fcd5861779.patch";
+inputs.nixpkgs-patch-20.url = "https://github.com/katrinafyi/nixpkgs/commit/c22a75b70ffe390f4ef3cc3a63eae5fcd5861779.patch";
 inputs.nixpkgs-patch-20.flake = false;
 ```
 nix-patcher will notice the special "-upstream" and "-patch-" suffixes and match these with "nixpkgs-upstream".
